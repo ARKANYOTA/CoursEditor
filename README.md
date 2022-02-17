@@ -3,16 +3,26 @@
 ## Version C++
 
 
-| :waning: ne marche que sur linux
+| :warning: ne marche que sur linux
 |---
 
 ### Dépendances
 
 - gcc (pour compiler) ou autre compilateur c++
+- jsonhpp
 
 L'installer sous arch:
 ```bash
 yay -Sy gcc
+```
+
+Insaller [Jsonhpp](https://github.com/open-source-parsers/jsoncpp)
+```
+git clone https://github.com/Microsoft/vcpkg.git
+cd vcpkg
+./bootstrap-vcpkg.sh
+./vcpkg integrate install
+./vcpkg install jsoncpp
 ```
 
 ### Compiler et exécuter
@@ -45,7 +55,7 @@ make a
 TODO
 ```
 
-### Le fichier config "~/.congig/cours2022.conf"
+### Le fichier config "~/.config/cours2022.conf"
 
 TODO
 
@@ -53,7 +63,7 @@ TODO
 
 - La TODO Liste de main.cpp
 
-### D'autres trucs a savoir
+### D'autres trucs à savoir
 
-| :warning: Aucune action est annulable, donc avant de faire une action verifiez votre mode et action
+| :warning: Aucune action est annulable, donc avant de faire une action, vérifiez votre action
 | ---

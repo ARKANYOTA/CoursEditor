@@ -20,18 +20,16 @@
 #include <stdio.h>
 #include <time.h>
 #include <cstring>
-
-
-
+#include <json/json.h>
 
 
 //TODO
 // - Tout le help
-// - Crée  cours matieres
+// - Crée  cours matières
 // - Fold
 // - Ajoute des cours
-// - Ajoute des matieres
-// - Ajoute des sous matieres
+// - Ajoute des matières
+// - Ajoute des sous matières
 // - Notifications
 
 //Bugs:
@@ -52,7 +50,7 @@
 // - q: Quitte le programme
 // - ?: Affiche les commandes
 // - t: Affiche le 'table of content'
-// - v: lis le cours dans le mode lecture quittable avec esc
+// - v: lis le cours dans le mode lecture quitable avec esc
 // - e: Export all
 // - R: Reload all files
 
@@ -95,7 +93,7 @@ vector<filesystem::path> list_fold;
 bool debug_mode = false;
 vector<pair<string, string>> path_info;
 vector<pair<string, pair<std::time_t, std::time_t>>> list_notifications;
-string debugvar = "jkqlksdf";
+string debugvar = "debug:";
 string borderutf8 = "\u2501";
 
 string operator * (string a, unsigned int b) {
@@ -107,7 +105,7 @@ string operator * (string a, unsigned int b) {
 }
 
 void create_notification(string message, time_t t) {
-    //time = when you stop the notification
+    // time = when you stop the notification
     list_notifications.push_back(make_pair(message, make_pair(time(0),time(0)+t)));
 }
 
@@ -121,18 +119,45 @@ void check_notifications() {
     }
 }
 
+int string_length(string s) {
+    int ssize = 0;
+    bool is_accent = false;
+    bool is_esc = false;
+    for (int i = 0; i < s.size(); i++) {
+        if(is_esc){
+            if (s[i] == 'm' or s[i] == 'H') {
+                is_esc = false;
+                continue;
+            }
+        }else {
+            if (int(s[i]) < 0 and is_accent) {
+                ssize++;
+                is_accent = false;
+            } else if (int(s[i]) < 0) {
+                is_accent = true;
+            } else if (s[i] == '\033') {
+                is_esc = true;
+            } else {
+                ssize++;
+            }
+        }
+        //     cout << int(t[i]) << endl;
+    }
+    return ssize;
+}
 
 bool send_confirmation(string message, string valid_message, string invalid_message) {
     struct winsize size;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &size);
+    int center_col = (size.ws_col / 2) - (string_length(message) / 2);
     for (int i = 0; i < 5; i++) {
-        cout << "\033["<< (size.ws_row)/2-1+i <<";"<< (size.ws_col-message.length())/2-3 << "H\u2503" << string(" ")*(message.length()+2) << "\u2503" << endl;
+        cout << "\033["<< (size.ws_row)/2-1+i <<";"<< (center_col-3) << "H\u2503" << string(" ")*(message.length()+2) << "\u2503" << endl;
     }
-    cout << "\033["<< (size.ws_row)/2-2 <<";"<< (size.ws_col-message.length())/2-3 << "H\u250f" << borderutf8*(message.length()+2) << "\u2513" << endl;
-    cout << "\033["<< (size.ws_row)/2 <<";"<< (size.ws_col-message.length())/2-1 << "H" << message << endl;
-    cout << "\033["<< (size.ws_row)/2+2 <<";"<< (size.ws_col-message.length())/2+1<< "H" << valid_message << endl;
-    cout << "\033["<< (size.ws_row)/2+2 <<";"<< (size.ws_col+message.length())/2-invalid_message.length()-4 << "H" << invalid_message << endl;
-    cout << "\033["<< (size.ws_row)/2+4 <<";"<< (size.ws_col-message.length())/2-3 << "H\u2517" << borderutf8*(message.length()+2) << "\u251b" << endl;
+    cout << "\033["<< (size.ws_row)/2-2 <<";"<< (center_col-3) << "H\u250f" << borderutf8*(message.length()+2) << "\u2513" << endl;
+    cout << "\033["<< (size.ws_row)/2 <<";"<< (center_col-1) << "H" << message << endl;
+    cout << "\033["<< (size.ws_row)/2+2 <<";"<< (center_col+1)<< "H" << valid_message << endl;
+    cout << "\033["<< (size.ws_row)/2+2 <<";"<< (center_col+ string_length(message)-invalid_message.length()-4) << "H" << invalid_message << endl;
+    cout << "\033["<< (size.ws_row)/2+4 <<";"<< (center_col-3) << "H\u2517" << borderutf8*(message.length()+2) << "\u251b" << endl;
     char nkey = getch_(0);  // TODO: Erreur si appuie sur une touche a echap (F3 ou autre)
     if (nkey == 'o' or nkey == 'y') {
         return true;
@@ -163,12 +188,15 @@ void load_config(){
                 }
             }
             if(line.find("cours_path") != string::npos){
-                cours_path = line.substr(line.find("=") + 1);
+                cours_path = line.substr(line.find("=") + 2);
             }
             if(line.find("editor") != string::npos){
-                //editors[current_editor] = line.substr(line.find("=") + 1);
-                //editors[current_editor] = line.substr(line.find("=") + 1);
-                0;
+                string editor = line.substr(line.find("=") + 2); //, line.length()-line.find("=")-2);
+                for (int i = 0; i <= editors->length(); i++) {
+                    if (editors[i] == editor) {
+                        current_editor = i;
+                    }
+                }
             }
             if(line.find("number:") != string::npos){
                 is_number = true;
@@ -208,7 +236,6 @@ void generate_path_info(){
     path_info.clear();
     if(!path_is_dir(path)) {
         filesystem::path current_path = path;
-        // TODO
         path_info.push_back(pair<string, string>("name", current_path.filename().string()));
         path_info.push_back(pair<string, string>("extention", current_path.extension().string()));
 
@@ -501,6 +528,15 @@ void draw_interface() {
 
 void draw_debug(){
     clear_screen();
+    cout << "courspath:" << cours_path << endl;
+    cout << "path:" << path << endl;
+    for (auto &c: numbers) {
+        cout << "    Number :" << c.first << "|" << c.second << endl;
+    }
+    for (auto &c: list_fold) {
+        cout << "    ListFold :" << c << endl;
+    }
+    /*
     cout << "current_mode = " << current_mode << endl;
     cout << "current_editor = " << current_editor << endl;
     cout << "current_cours = " << current_cours << endl;
@@ -525,6 +561,8 @@ void draw_debug(){
     for (auto &c: list_notifications) {
         cout << "    ListNotification : " << c.first << "|" << c.second.second << endl;
     }
+
+    */
 }
 
 void draw_visualisation(){
@@ -572,7 +610,7 @@ void delete_current_path(){
             filesystem::remove_all(path);
         }
     }else{
-        if(send_confirmation("Voulez vous vraiment supprimer le fichier " + path + " ?", "Oui", "Non")){
+        if(send_confirmation("Voulez vous vraiment supprimer le éééééééééfichier " + path + " ?", "Oui", "Non")){
             create_notification("Fichier supprimé", 100);
             filesystem::remove(path);
             reload_matieres();
@@ -604,6 +642,8 @@ int main(void) {
             draw_toc();
         }
         update();
+        // cout << debugvar << endl;  // Je ne sais pour quelle raison mais si on print un string ou un endl, le send_confirmation ne fonctionne pas
+        cout << "";
 
         string key = get_key_(0);
         if (!is_visualisation) {
@@ -679,6 +719,3 @@ int main(void) {
     return 0;
 
 }
-
-
-
