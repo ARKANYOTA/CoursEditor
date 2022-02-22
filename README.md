@@ -17,6 +17,7 @@ yay -Sy gcc
 ```
 
 Insaller [Jsonhpp](https://github.com/open-source-parsers/jsoncpp)
+A faire dans le dossier tmp ou home:
 ```
 git clone https://github.com/Microsoft/vcpkg.git
 cd vcpkg

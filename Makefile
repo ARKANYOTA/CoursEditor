@@ -1,5 +1,5 @@
 compile:
-	g++ main.cpp
+	g++ main.cpp -ljsoncpp
 
 execute:
 	./a.out
@@ -14,7 +14,7 @@ run-debug: debug
 	ddd debug
 
 debug-2:
-	g++ test.cpp -o test.o && ./test.o
+	g++ test.cpp -o test.o -ljsoncpp && ./test.o
 
 
 a: compile execute

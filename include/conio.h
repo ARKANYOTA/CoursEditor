@@ -22,6 +22,9 @@ std::string print_with_escape_char(std::string text){
         else if(text[i] == '\xce'){
             to_return += "\\xce";
         }
+        else if(text[i] == '\x7f'){
+            to_return += "\\x7f";
+        }
         else{
             to_return += text[i];
         }
@@ -76,6 +79,30 @@ std::string get_key_(int echo){
     }
     resetTermios();
     return cccc;
+}
+
+char* get_kk(char* key, int echo) {
+    initTermios(echo);
+    char c1;
+    char c2;
+    char c3;
+    char c4;
+    c1 = (char) getchar();
+    key[0] = c1;
+    if(c1 == '\x1b' || c1=='\xce'){
+        c2 = (char) getchar();
+        key[1] = c2;
+        if(c2 == '\x5b' || c2=='O'){
+            c3 = (char) getchar();
+            key[2] = c3;
+            if(c3 == '\x33' || c3=='1' || c3=='2'){
+                c4 = (char) getchar();
+                key[3] = c4;
+            }
+        }
+    }
+    resetTermios();
+    return key;
 }
 
 /* Read 1 character without echo */
