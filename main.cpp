@@ -31,12 +31,13 @@
 // - Tout le help
 // - Cut avec la fonction personnalisée pour éviter les débordements dans l'écran
 // - I18n
-// - Faire un auto git push
 
 // -pouvoir changer le cours_path
 //Bugs:
 // - Metre un nombre maximale de notiications
 // - Quand le dossier est suprimer, il met le fichier a été supprimer, et n'update pas les matieres
+// Potentiel Bug:
+// - Ferifier si le fichier config n'exsiste pas ou plus
 
 //Optimisation
 // - replace all border dans une liste d'élément.
@@ -45,6 +46,15 @@
 // - Bouger le windows size
 // - Mettre des notification avec nom des actions et fichier modifier
 // - Supprimer les debugvar
+// - Faire le makefile / auto install config
+// - Ajouter un :vim setf=...: sur chaque creation de fichier
+// - Refaire touts les box/ size box/ position de chaque elmnet
+// - Mettre les variables dans des classes/typedef/struct
+// - Reorganiser le dossier Cours2022Git
+// - Refaire le get_input
+// - mettre le hiddenFiles dans le fichier notes
+// - Faire un packet aur
+// - Refaire le readme avec des images
 
 //Help
 // - n: Changer d'éditeur
@@ -89,6 +99,9 @@ map <string, string> other_editors = {
         {".odt",     "libreoffice"},
 };
 string cours_path = "/home/ay/Cours2022Git/notes";
+string current_locale = "fr";
+int cours_version = 0;
+
 map <string, filesystem::path> list_cours;
 string current_cours;
 bool is_cours_selected = true;
@@ -100,6 +113,7 @@ string current_matiere;
 vector <filesystem::path> list_matieres;
 // char config_path[] = "/home/ay/.config/cours2022.conf";
 char config_path[] = "/home/ay/.config/cours2022.json";
+char logger_path[] = "/home/ay/.config/cours2022.log";
 vector <pair<string, string>> numbers;
 vector <filesystem::path> list_fold;
 bool debug_mode = false;
@@ -124,6 +138,9 @@ void create_notification(string message, time_t t) {
     // time = when you stop the notification
     // list_notifications.push_back(make_pair(message, make_pair(time(0), time(0) + t)));
     notifications.push_back({message, 0, time(0), time(0) + t, t});
+    ofstream logger(logger_path, ios::app);
+    logger << "Notification: " << message << " " << t << endl;
+    logger.close();
 }
 
 void check_notifications() {
@@ -200,6 +217,8 @@ void load_config() {
     Json::Value obj;
     reader.parse(ifs, obj); // reader can also read strings
     cours_path = obj["cours_path"].asString();
+    cours_version = obj["cours_version"].asInt();
+    current_locale = obj["current_locale"].asString();
     // Dans fold
     for (Json::Value::ArrayIndex i = 0; i != obj["fold"].size(); i++) {
         // list_fold.push_back(obj["fold"][i]);//.toStyledString());
@@ -214,6 +233,7 @@ void load_config() {
 void save_config(){
     Json::Value obj;
     obj["cours_path"] = cours_path;
+    obj["cours_version"] = cours_version;
     for (filesystem::path p: list_fold) {
         obj["fold"].append(p.string());
     }
@@ -760,18 +780,19 @@ void execute_file() {
         // if extention is in other_editors keys
         if (other_editors.find(current_path.extension().string()) != other_editors.end()) {
             string command = other_editors[current_path.extension().string()];
-            command.append(" ");
+            command.append(" \"");
             command.append(current_matiere);
+            command.append("\"");
             system(command.c_str());
 
         } else {
-            system((editors[current_editor] + " " + path).c_str());
+            system((editors[current_editor] + " \"" + path +"\"").c_str());
         }
 
     } else {
         if (send_confirmation("Etez vous sur de vouloir lancer votre editeur sur ce dossier ?", "Oui lance (y/o)",
                               "Ne pas lancer")) {
-            system((editors[current_editor] + " " + current_matiere).c_str());
+            system((editors[current_editor] + " \"" + current_matiere + "\"").c_str());
         }
     }
 }
@@ -790,6 +811,30 @@ void delete_current_path() {
     }
 }
 
+// --------------------------------------------------
+// Git push
+// --------------------------------------------------
+
+void github_push() {
+
+    filesystem::path tmp_course_path(cours_path);
+    string command = "cd " + tmp_course_path.parent_path().string() + " && git add . && git commit -m \"update numéro "+ to_string(cours_version) +"\" && git push";
+    int stderroe = system(command.c_str());
+    if(stderroe == 0){
+        create_notification("Votre cours a été mis à jour sur Github", 5);
+        cours_version++;
+        save_config();
+    }else{
+        create_notification("Erreur lors de la mise à jour sur Github", 5);
+    }
+    cout << "Press key to continue" << endl;
+    getch_(0);
+    cout << endl;
+}
+
+// --------------------------------------------------
+// Main
+// --------------------------------------------------
 int main(void) {
     struct winsize size;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &size);
@@ -809,7 +854,7 @@ int main(void) {
         // cout << debugvar << endl;  // Je ne sais pour quelle raison mais si on print un string ou un endl, le send_confirmation ne fonctionne pas
         // cout << "";
 
-        cout << "\033[" << size.ws_row - 1 << ";" << 3 << "H" << debugvar << current_matiere << endl;
+        cout << "\033[" << size.ws_row - 1 << ";" << 3 << "H" << debugvar <<"|" << current_matiere << endl;
         string key = get_key_(0);
         if (!is_visualisation) {
             if (key[0] == 'n') current_editor = (current_editor + 1) % (editors->length() + 1);
@@ -900,6 +945,12 @@ int main(void) {
                 reload_cours();
             }
             if (key[0] == '?') cout << "Affiche les commandes (Ceci...)" << endl;
+            if (key[0] == 'g'){
+                // Github push
+                if (send_confirmation("Do you want to push your changes to the github ?", "Yes(y|o)", "Non TG(autre)")) {
+                    github_push();
+                }
+            };
         } else {
             if (key[0] == 'v') is_visualisation = !is_visualisation;
             if (key[0] == 't') is_toc = !is_toc;
