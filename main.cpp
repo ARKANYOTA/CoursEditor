@@ -50,11 +50,11 @@
 // - Ajouter un :vim setf=...: sur chaque creation de fichier
 // - Refaire touts les box/ size box/ position de chaque elmnet
 // - Mettre les variables dans des classes/typedef/struct
-// - Reorganiser le dossier Cours2022Git
 // - Refaire le get_input
 // - mettre le hiddenFiles dans le fichier notes
 // - Faire un packet aur
 // - Refaire le readme avec des images
+// - Log le auto git push
 
 //Help
 // - n: Changer d'éditeur
@@ -93,7 +93,7 @@ map <string, string> other_editors = {
         {".mkv",     "mpv"},
         {".webm",    "mpv"},
         {".pdf",     "zathura"},
-        {".asprite", "asprite"},
+        {".aseprite", "aseprite"},
         {".xcf",     "gimp"},
         {".html",    "brave"},
         {".odt",     "libreoffice"},
@@ -134,13 +134,17 @@ Json::Value number;
 // --------------------------------------------------
 // Notifications
 // --------------------------------------------------
+void create_log(string message, string object) {
+    ofstream logger(logger_path, ios::app);
+    logger <<  object << " at " << time(0) << ": " << message << " " << endl;
+    logger.close();
+}
+
 void create_notification(string message, time_t t) {
     // time = when you stop the notification
     // list_notifications.push_back(make_pair(message, make_pair(time(0), time(0) + t)));
     notifications.push_back({message, 0, time(0), time(0) + t, t});
-    ofstream logger(logger_path, ios::app);
-    logger << "Notification: " << message << " " << t << endl;
-    logger.close();
+    create_log(message, "Notification");
 }
 
 void check_notifications() {
@@ -790,7 +794,7 @@ void execute_file() {
         }
 
     } else {
-        if (send_confirmation("Etez vous sur de vouloir lancer votre editeur sur ce dossier ?", "Oui lance (y/o)",
+        if (send_confirmation("Etez vous sur de vouloir lancer votre editeur sur ce dossier ?", "Oui lance (o)",
                               "Ne pas lancer")) {
             system((editors[current_editor] + " \"" + current_matiere + "\"").c_str());
         }
@@ -799,11 +803,11 @@ void execute_file() {
 
 void delete_current_path() {
     if (path_is_dir(path)) { // TODO
-        if (send_confirmation("Voulez vous vraiment supprimer le dossier " + path + " ?", "Oui", "Non")) {
+        if (send_confirmation("Voulez vous vraiment supprimer le dossier " + path + " ?", "Oui (o)", "Non")) {
             filesystem::remove_all(path);
         }
     } else {
-        if (send_confirmation("Voulez vous vraiment supprimer le éééééééééfichier " + path + " ?", "Oui", "Non")) {
+        if (send_confirmation("Voulez vous vraiment supprimer le fichier " + path + " ?", "Oui (o)", "Non")) {
             create_notification("Le fichier à été supprimé", 140);
             filesystem::remove(path);
             reload_matieres();
@@ -905,7 +909,7 @@ int main(void) {
                     create_notification("Close debug menu", 14);
                     debug_mode = !debug_mode;
                 } else {
-                    if (send_confirmation("Do you want to enable debug mode ?", "Yes(y|o)", "Non TG(autre)")) {
+                    if (send_confirmation("Do you want to enable debug mode ?", "Yes (o)", "Non TG(autre)")) {
                         debug_mode = true;
                         create_notification("Launch debug menu", 14);
                     } else {
@@ -947,7 +951,7 @@ int main(void) {
             if (key[0] == '?') cout << "Affiche les commandes (Ceci...)" << endl;
             if (key[0] == 'g'){
                 // Github push
-                if (send_confirmation("Do you want to push your changes to the github ?", "Yes(y|o)", "Non TG(autre)")) {
+                if (send_confirmation("Do you want to push your changes to the github ?", "Yes (o)", "Non TG(autre)")) {
                     github_push();
                 }
             };
