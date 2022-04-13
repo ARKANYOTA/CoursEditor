@@ -1,7 +1,9 @@
 # CoursEditor-TUI (AY)
 
+## Version C++
 
-| :warning: Pour le moment le programme ne marche que sur linux.
+
+| :warning: ne marche que sur linux
 |---
 
 ### Dépendances
@@ -23,28 +25,40 @@ cd vcpkg
 ./vcpkg integrate install
 ./vcpkg install jsoncpp
 ```
-### Compilation et execution et installation
-#### Compiler
+
+### Compiler et exécuter
+#### Compiler le code
 
 ```bash
 make compile
+ou
+g++ main.cpp
 ```
 
-#### Compiler et Installer 
+#### Exécuter le code
 
-```bash
-make compile install  # ou make
-```
-
-#### Executer pour les tests (Demande de l'installer pour avoir les configs)
 ```bash
 make execute
+ou
+./a.out
 ```
 
-### Config
+#### Faire les 2 en meme temps
 
-Le fichier config est dans `/home/ay/.config/cours2022.json`
-Le fichier log    est dans `/home/ay/.config/cours2022.log`
+```bash
+make a
+```
+
+
+### Commandes une fois l'application lancer
+
+```markdown
+TODO
+```
+
+### Le fichier config "~/.config/cours2022.conf"
+
+TODO
 
 ### TODO List:
 
@@ -55,8 +69,3 @@ Le fichier log    est dans `/home/ay/.config/cours2022.log`
 | :warning: Aucune action est annulable, donc avant de faire une action, vérifiez votre action
 | ---
 
-### Commandes une fois l'application lancer, Help
-
-```markdown
-TODO
-```

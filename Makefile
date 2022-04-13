@@ -1,20 +1,24 @@
-compile:
-	g++ main.cpp -ljsoncpp
+all: clean compile install
 
-execute:
-	./a.out
+compile: clean
+	g++ courseditor.cpp -ljsoncpp -o courseditor
+
+execute: 
+	./courseditor
 
 clean:
-	rm -f *.o *.out main debug
+	rm -f *.o *.out main debug courseditor
 
-debug:
-	g++ --std=c++11 -g -o debug main.cpp
+install:
+	cp configs/cours2022.json /home/ay/.config/cours2022.json 
+	cp configs/cours2022.log /home/ay/.config/cours2022.log 
+	sudo install -m 755 courseditor /usr/bin
 
-run-debug: debug
-	ddd debug
-
-debug-2:
-	g++ test.cpp -o test.o -ljsoncpp && ./test.o
-
-
-a: compile execute
+# debug:
+# 	g++ --std=c++11 -g -o debug main.cpp
+# 
+# run-debug: debug
+# 	ddd debug
+# 
+# debug-2:
+# 	g++ test.cpp -o test.o -ljsoncpp && ./test.o

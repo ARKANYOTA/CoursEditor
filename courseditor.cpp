@@ -128,7 +128,7 @@ struct notification {
 vector <notification> notifications;
 vector <pair<string, pair < std::time_t, std::time_t>>>
 list_notifications;
-string debugvar = "debug:";
+// string debugvar = "debug:";
 Json::Value number;
 
 // --------------------------------------------------
@@ -858,7 +858,7 @@ int main(void) {
         // cout << debugvar << endl;  // Je ne sais pour quelle raison mais si on print un string ou un endl, le send_confirmation ne fonctionne pas
         // cout << "";
 
-        cout << "\033[" << size.ws_row - 1 << ";" << 3 << "H" << debugvar <<"|" << current_matiere << endl;
+	// cout << "\033[" << size.ws_row - 1 << ";" << 3 << "H" << debugvar <<"|" << current_matiere << endl;
         string key = get_key_(0);
         if (!is_visualisation) {
             if (key[0] == 'n') current_editor = (current_editor + 1) % (editors->length() + 1);

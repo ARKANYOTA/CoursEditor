@@ -30,6 +30,7 @@
 *.exe
 *.out
 *.app
+courseditor
 
 # Python
 __pycache__/*
