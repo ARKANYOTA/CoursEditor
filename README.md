@@ -11,10 +11,10 @@
 
 L'installer sous arch:
 ```bash
-yay -Sy gcc
+yay -Sy gcc jsoncpp
 ```
 
-Insaller [Jsonhpp](https://github.com/open-source-parsers/jsoncpp)
+Insaller [Jsoncpp](https://github.com/open-source-parsers/jsoncpp)
 A faire dans le dossier tmp ou home:
 ```
 git clone https://github.com/Microsoft/vcpkg.git

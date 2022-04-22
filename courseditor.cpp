@@ -1,3 +1,4 @@
+// Imports {{{1
 #include "include/conio.h"
 #include "include/usefull_function.h"
 
@@ -23,11 +24,12 @@
 #include <cstring>
 #include <json/json.h>
 #include <fstream>
+#include <regex>        // sort by number
 
+//TODO  {{{1
 
 // Entrain de dev ligne :590
 
-//TODO
 // - Tout le help
 // - Cut avec la fonction personnalisée pour éviter les débordements dans l'écran
 // - I18n
@@ -36,25 +38,19 @@
 //Bugs:
 // - Metre un nombre maximale de notiications
 // - Quand le dossier est suprimer, il met le fichier a été supprimer, et n'update pas les matieres
-// Potentiel Bug:
-// - Ferifier si le fichier config n'exsiste pas ou plus
 
 //Optimisation
 // - replace all border dans une liste d'élément.
 // - Ne pas supprimer un fichier ou un dossier mais le metrre dans une corbeille
-// - Faire un logger de toutes les actions
 // - Bouger le windows size
 // - Mettre des notification avec nom des actions et fichier modifier
-// - Supprimer les debugvar
-// - Faire le makefile / auto install config
-// - Ajouter un :vim setf=...: sur chaque creation de fichier
+//
 // - Refaire touts les box/ size box/ position de chaque elmnet
 // - Mettre les variables dans des classes/typedef/struct
 // - Refaire le get_input
 // - mettre le hiddenFiles dans le fichier notes
 // - Faire un packet aur
 // - Refaire le readme avec des images
-// - Log le auto git push
 
 //Help
 // - n: Changer d'éditeur
@@ -75,6 +71,8 @@
 // - e: Export all
 // - R: Reload all files
 
+
+// VARIABLES {{{1
 using namespace std;
 
 int current_mode = 0;
@@ -128,12 +126,12 @@ struct notification {
 vector <notification> notifications;
 vector <pair<string, pair < std::time_t, std::time_t>>>
 list_notifications;
-// string debugvar = "debug:";
+string debugvar = "debug:";
 Json::Value number;
 
-// --------------------------------------------------
-// Notifications
-// --------------------------------------------------
+string headerOfEveryFile = "<!-- :vim: ft=aymd set sw=4 sts=4 et fdm=marker -->";
+
+// Notifications {{{1
 void create_log(string message, string object) {
     ofstream logger(logger_path, ios::app);
     logger <<  object << " at " << time(0) << ": " << message << " " << endl;
@@ -178,23 +176,14 @@ void draw_notifications() {
         i = i - 3;
     }
 }
-// --------------------------------------------------
-// End Notifications
-// --------------------------------------------------
+
+// MsgBox {{{1
 
 int send_confirmation(string message, string valid_message, string invalid_message, char valid_key = 'o',
                       bool has_invalid_key = false, char invalid_key = 'n') {
     struct winsize size;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &size);
     int center_col = (size.ws_col / 2) - (string_length(message) / 2);
-    // for (int i = 0; i < 5; i++) {
-    //     cout << "\033[" << (size.ws_row) / 2 - 1 + i << ";" << (center_col - 3) << "H\u2503" << string(" ") * (message.length() + 2) << "\u2503" << endl;
-    // }
-    // cout << "\033[" << (size.ws_row) / 2 - 2 << ";" << (center_col - 3) << "H\u250f" << borderutf8 * (message.length() + 2) << "\u2513" << endl;
-    // cout << "\033[" << (size.ws_row) / 2 << ";" << (center_col - 1) << "H" << message << endl;
-    // cout << "\033[" << (size.ws_row) / 2 + 2 << ";" << (center_col + 1) << "H" << valid_message << endl;
-    // cout << "\033[" << (size.ws_row) / 2 + 2 << ";" << (center_col + string_length(message) - invalid_message.length() - 4) << "H" << invalid_message << endl;
-    // cout << "\033[" << (size.ws_row) / 2 + 4 << ";" << (center_col - 3) << "H\u2517" << borderutf8 * (message.length() + 2) << "\u251b" << endl;
 
     draw_box(center_col - 3, size.ws_row / 2 - 1, message.length() + 6, 5);
     cout << "\033[" << (size.ws_row) / 2 << ";" << (center_col - 1) << "H" << message << endl;
@@ -212,26 +201,27 @@ int send_confirmation(string message, string valid_message, string invalid_messa
     return false;
 }
 
-// --------------------------------------------------
-// Generation, et loading, Reload
-// --------------------------------------------------
+// Config, Generation, et loading, Reload  {{{1
 void load_config() {
-    ifstream ifs("/home/ay/.config/cours2022.json");
-    Json::Reader reader;
-    Json::Value obj;
-    reader.parse(ifs, obj); // reader can also read strings
-    cours_path = obj["cours_path"].asString();
-    cours_version = obj["cours_version"].asInt();
-    current_locale = obj["current_locale"].asString();
-    // Dans fold
-    for (Json::Value::ArrayIndex i = 0; i != obj["fold"].size(); i++) {
-        // list_fold.push_back(obj["fold"][i]);//.toStyledString());
-        filesystem::path p = obj["fold"][i].asString();
-        list_fold.push_back(p); //.toStyledString());
-        //if (obj["fold"][i].isMember("attr1")) {
-        //    values.push_back(obj["fold"][i]["attr1"].asString());
-        //}
-    }
+	if(!filesystem::exists(config_path)){
+		return;
+	}
+	ifstream ifs(config_path);
+	Json::Reader reader;
+	Json::Value obj;
+	reader.parse(ifs, obj); // reader can also read strings
+	cours_path = obj["cours_path"].asString();
+	cours_version = obj["cours_version"].asInt();
+	current_locale = obj["current_locale"].asString();
+	// Dans fold
+	for (Json::Value::ArrayIndex i = 0; i != obj["fold"].size(); i++) {
+		// list_fold.push_back(obj["fold"][i]);//.toStyledString());
+		filesystem::path p = obj["fold"][i].asString();
+		list_fold.push_back(p); //.toStyledString());
+		//if (obj["fold"][i].isMember("attr1")) {
+		//    values.push_back(obj["fold"][i]["attr1"].asString());
+		//}
+	}
 }
 
 void save_config(){
@@ -241,11 +231,12 @@ void save_config(){
     for (filesystem::path p: list_fold) {
         obj["fold"].append(p.string());
     }
-    ofstream ofs("/home/ay/.config/cours2022.json");
+    ofstream ofs(config_path);
     ofs << obj;
     ofs.close();
 }
 
+// Path Info (Information sur le fichier sélectionner)  {{{1
 void generate_path_info() {
     path_info.clear();
     if (!path_is_dir(path)) {
@@ -285,7 +276,67 @@ void generate_path_info() {
     }
 }
 
-// // Reload
+// Reload {{{1
+bool isdigits(string s){
+	if(s.length()==0){
+		return false;
+	}
+	for(char c:s){
+		if(!isdigit(c)){
+			return false;
+		}
+	};
+	return true;
+}
+//
+bool compareMatiere(filesystem::path i1p, filesystem::path i2p){
+	string i1(i1p.filename());
+	string i2(i2p.filename());
+
+	string il1 = i1.substr(0, i1.find("."));
+	debugvar = il1;
+	string il2 = i2.substr(0, i2.find("."));
+	debugvar += il2;
+
+	if (isdigits(il1) && isdigits(il2)){
+		
+		return stoi(il1) < stoi(il2);
+		// return il1 < il2;
+	}else if(isdigits(il1)){
+		return true;
+	}else if(isdigits(il2)){
+		return false;
+	}else{
+		return i1 < i2;
+	}
+}
+
+bool compareCours(filesystem::path i1p, filesystem::path i2p){
+	string i1(i1p.filename());
+	string i2(i2p.filename());
+
+	return i1 < i2;
+	regex expMatch3FirstDigit("([0-9]+)\\.([0-9]+)?\\.?([0-9]+)?\\.?.+");
+	smatch smfori1;
+	smatch smfori2;
+	if(regex_search(i1, smfori1, expMatch3FirstDigit)){          // A minimum un digit sur i1
+		if(regex_search(i2, smfori2, expMatch3FirstDigit)){  // A minimum un digit sur i2
+			// Compare first second third
+			return smfori1[0] < smfori2[0];
+		}else{                                               // Pas de digit sur i2 mais a sur i1
+			return true;
+		}
+	}else{
+		if(regex_search(i2, smfori2, expMatch3FirstDigit)){  // A minimum un digit sur i2   mais pas sur i1
+			return false;
+		}else{                                               // Pas de digit sur i1 ni i2
+			// Compare Alphabétiquement
+			return i2 < i1;
+		}
+	
+	}
+}
+
 void reload_matieres() {
     list_matieres.clear();
     if (current_cours.substr(0, 2) == "+ ") {
@@ -296,7 +347,7 @@ void reload_matieres() {
     } else {
         list_matieres.push_back(list_cours[current_cours]);
     }
-    sort(list_matieres.begin(), list_matieres.end());
+    sort(list_matieres.begin(), list_matieres.end(), compareMatiere);
     current_matiere = list_matieres.begin()->string();
     //loop inside the vector
     vector <filesystem::path> list_matieres2;
@@ -312,18 +363,24 @@ void reload_matieres() {
     }
     int i = 0;
     set <filesystem::path> set_matieres;
+    vector <filesystem::path> tmp_vector_matieres;
 
-    for (std::vector<filesystem::path>::iterator it = std::begin(list_matieres2);
-         it != std::end(list_matieres2); ++it) {
+    for (std::vector<filesystem::path>::iterator it = std::begin(list_matieres2); it != std::end(list_matieres2); ++it) {
         i++;
         if (*it != "Non") {
             if (path_is_dir(it->string())) {
                 set_matieres.clear();
+		tmp_vector_matieres.clear();
                 for (auto &entry: filesystem::directory_iterator(it->string())) {
                     set_matieres.insert(entry.path());
                 }
 
                 for (const auto &file: set_matieres) {
+			tmp_vector_matieres.insert(end(tmp_vector_matieres), file);
+		}
+		sort(tmp_vector_matieres.begin(), tmp_vector_matieres.end(), compareMatiere);
+
+                for (const auto &file: tmp_vector_matieres) {
                     // File name
                     list_matieres.insert(begin(list_matieres) + i, file);
                     i++;
@@ -347,9 +404,7 @@ void reload_cours() {
     reload_matieres();
 }
 
-// --------------------------------------------------
-// Draw
-// --------------------------------------------------
+// Draw {{{1
 void draw_cours() {
     struct winsize size;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &size);
@@ -439,6 +494,7 @@ void draw_interface() {
     cout << "\033[42;30;1m\033[" << size.ws_row - 1 << ";" << "0H " << current_mode_name << " \033[0m";
     for (int i = 0; i < path.length(); i++) {
         bottom_text[i + 1] = path[i];
+
     }
     cout << "\033[100;34m\033[" << size.ws_row - 1 << ";" << current_mode_name.length() + 3 << "H" << bottom_text
          << "\033[0m";
@@ -479,7 +535,6 @@ void draw_debug() {
         cout << it.key().asString() << endl;// << ':' << it->asInt() << '\n';
 
 
-    /*
     cout << "current_mode = " << current_mode << endl;
     cout << "current_editor = " << current_editor << endl;
     cout << "current_cours = " << current_cours << endl;
@@ -504,8 +559,6 @@ void draw_debug() {
     for (auto &c: list_notifications) {
         cout << "    ListNotification : " << c.first << "|" << c.second.second << endl;
     }
-
-    */
 }
 
 void draw_visualisation() {
@@ -539,10 +592,8 @@ void draw_toc() {
         }
     }
 }
-// --------------------------------------------------
-// End of draw
-// --------------------------------------------------
 
+// Reload All and Redraw {{{1
 void reload() {  // A mettre de la de la lige :628
     string tmp_path = path;
     load_config();
@@ -564,10 +615,8 @@ void re_draw_all() {
         draw_toc();
     }
 }
-// --------------------------------------------------
-// Creation inttercalaire et cours
-// --------------------------------------------------
 
+// Creation inttercalaire et cours , get_input_string/level,choosewhat create {{{1
 
 string get_input_string(string message, string start_with = "> ") {
     struct winsize size;
@@ -728,6 +777,7 @@ void create_course() {
             return;
         }
         string text = "# " + input_string + "\n";
+	text += headerOfEveryFile;
         ofstream file(where_is_file);
         file << text;
         file.close();
@@ -775,9 +825,7 @@ void choose_what_create() {
 
 }
 
-// --------------------------------------------------
-// End of creation
-// --------------------------------------------------
+// Execute et Delete File {{{1
 void execute_file() {
     if (!path_is_dir(current_matiere)) {
         filesystem::path current_path = path;
@@ -815,9 +863,7 @@ void delete_current_path() {
     }
 }
 
-// --------------------------------------------------
-// Git push
-// --------------------------------------------------
+// Git push {{{1
 
 void github_push() {
 
@@ -835,6 +881,7 @@ void github_push() {
     getch_(0);
     cout << endl;
 }
+// }}}
 
 // --------------------------------------------------
 // Main
@@ -858,7 +905,7 @@ int main(void) {
         // cout << debugvar << endl;  // Je ne sais pour quelle raison mais si on print un string ou un endl, le send_confirmation ne fonctionne pas
         // cout << "";
 
-	// cout << "\033[" << size.ws_row - 1 << ";" << 3 << "H" << debugvar <<"|" << current_matiere << endl;
+	// cout << "\033[" << size.ws_row - 1 << ";" << 3 << "H" << debugvar << endl;
         string key = get_key_(0);
         if (!is_visualisation) {
             if (key[0] == 'n') current_editor = (current_editor + 1) % (editors->length() + 1);
@@ -963,3 +1010,4 @@ int main(void) {
     return 0;
 
 }
+// vim: fdm=marker:

@@ -9,6 +9,9 @@ execute:
 clean:
 	rm -f *.o *.out main debug courseditor
 
+install-deps-arch:
+	yay -S gcc jsoncpp
+
 install:
 	cp configs/cours2022.json /home/ay/.config/cours2022.json 
 	cp configs/cours2022.log /home/ay/.config/cours2022.log 
